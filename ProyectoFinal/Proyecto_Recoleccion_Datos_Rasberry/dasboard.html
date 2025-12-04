@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Dashboard Recolección de Datos</title>
+
+<style>
+    body {
+        font-family: "Segoe UI", sans-serif;
+        background: #f1f4f9;
+        margin: 0;
+        padding: 20px;
+    }
+
+    h1 {
+        text-align: center;
+        color: #333;
+    }
+
+    .container {
+        max-width: 900px;
+        margin: auto;
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+
+    table th, table td {
+        padding: 12px;
+        border-bottom: 1px solid #ddd;
+        text-align: center;
+    }
+
+    table th {
+        background: #4c8bf5;
+        color: white;
+        font-weight: bold;
+    }
+
+    tr:hover {
+        background: #f5f7fa;
+    }
+
+    .status {
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-weight: bold;
+        color: white;
+    }
+
+    .ok { background: #4CAF50; }
+    .alert { background: #E67E22; }
+    .danger { background: #E74C3C; }
+
+    button {
+        background: #4c8bf5;
+        padding: 10px 20px;
+        border: none;
+        color: white;
+        border-radius: 8px;
+        cursor: pointer;
+        margin-top: 10px;
+    }
+
+    button:hover {
+        background: #3a72d8;
+    }
+</style>
+
+</head>
+<body>
+
+<h1>Dashboard de Recolección de Datos</h1>
+
+<div class="container">
+
+    <button onclick="cargarDatos()">🔄 Actualizar Datos</button>
+
+    <table id="tabla">
+        <thead>
+            <tr>
+                <th>Hora</th>
+                <th>Latitud</th>
+                <th>Longitud</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<script>
+const username = "SofiGlez";
+const key = "";
+const feed = "recolecciondatos";
+
+// Convierte estado a color bonito
+function renderEstado(e) {
+    if (e.includes("NORMAL"))
+        return `<span class="status ok">${e}</span>`;
+    else if (e.includes("PELIGRO") || e.includes("NIEBLA"))
+        return `<span class="status alert">${e}</span>`;
+    else
+        return `<span class="status danger">${e}</span>`;
+}
+
+function cargarDatos() {
+    fetch(`https://io.adafruit.com/api/v2/${username}/feeds/${feed}/data?limit=20`, {
+        headers: { "X-AIO-Key": key }
+    })
+    .then(r => r.json())
+    .then(data => {
+        const tbody = document.querySelector("#tabla tbody");
+        tbody.innerHTML = "";
+
+        data.forEach(item => {
+            const json = JSON.parse(item.value);
+
+            tbody.innerHTML += `
+                <tr>
+                    <td>${json.hora}</td>
+                    <td>${json.latitud}</td>
+                    <td>${json.longitud}</td>
+                    <td>${renderEstado(json.estado)}</td>
+                </tr>
+            `;
+        });
+    })
+    .catch(err => alert("Error al cargar datos: " + err));
+}
+
+cargarDatos();
+</script>
+
+</body>
+</html>
