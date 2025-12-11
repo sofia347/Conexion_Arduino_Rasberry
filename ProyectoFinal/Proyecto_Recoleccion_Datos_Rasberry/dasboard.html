@@ -72,7 +72,21 @@
     button:hover {
         background: #3a72d8;
     }
+
+    .charts {
+        margin-top: 40px;
+    }
+
+    canvas {
+        margin-top: 25px;
+        background: #fff;
+        padding: 15px;
+        border-radius: 12px;
+        box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+    }
 </style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 </head>
 <body>
@@ -94,12 +108,27 @@
         </thead>
         <tbody></tbody>
     </table>
+
+    <!-- SECCIÓN DE GRÁFICAS -->
+    <div class="charts">
+        <h2>Gráfica de Estados</h2>
+        <canvas id="graficaEstados"></canvas>
+
+        <h2>Latitud a lo largo del tiempo</h2>
+        <canvas id="graficaLatitudes"></canvas>
+
+        <h2>Longitud a lo largo del tiempo</h2>
+        <canvas id="graficaLongitudes"></canvas>
+    </div>
+
 </div>
 
 <script>
 const username = "SofiGlez";
 const key = "";
 const feed = "recolecciondatos";
+
+let chartEstados, chartLatitudes, chartLongitudes;
 
 // Convierte estado a color bonito
 function renderEstado(e) {
@@ -112,13 +141,19 @@ function renderEstado(e) {
 }
 
 function cargarDatos() {
-    fetch(`https://io.adafruit.com/api/v2/${username}/feeds/${feed}/data?limit=20`, {
+    fetch(`https://io.adafruit.com/api/v2/${username}/feeds/${feed}/data?limit=50`, {
         headers: { "X-AIO-Key": key }
     })
     .then(r => r.json())
     .then(data => {
         const tbody = document.querySelector("#tabla tbody");
         tbody.innerHTML = "";
+
+        // Datos para gráficas
+        const horas = [];
+        const latitudes = [];
+        const longitudes = [];
+        const estados = {};
 
         data.forEach(item => {
             const json = JSON.parse(item.value);
@@ -131,9 +166,67 @@ function cargarDatos() {
                     <td>${renderEstado(json.estado)}</td>
                 </tr>
             `;
+
+            // Datos para gráficas
+            horas.push(json.hora);
+            latitudes.push(json.latitud);
+            longitudes.push(json.longitud);
+
+            estados[json.estado] = (estados[json.estado] || 0) + 1;
         });
+
+        generarGraficas(horas, latitudes, longitudes, estados);
     })
     .catch(err => alert("Error al cargar datos: " + err));
+}
+
+function generarGraficas(horas, latitudes, longitudes, estados) {
+
+    // ---- GRÁFICA DE ESTADOS ----
+    const etiquetasEstados = Object.keys(estados);
+    const valoresEstados = Object.values(estados);
+
+    if (chartEstados) chartEstados.destroy();
+
+    chartEstados = new Chart(document.getElementById("graficaEstados"), {
+        type: "pie",
+        data: {
+            labels: etiquetasEstados,
+            datasets: [{
+                data: valoresEstados
+            }]
+        }
+    });
+
+    // ---- GRÁFICA DE LATITUD ----
+    if (chartLatitudes) chartLatitudes.destroy();
+
+    chartLatitudes = new Chart(document.getElementById("graficaLatitudes"), {
+        type: "line",
+        data: {
+            labels: horas,
+            datasets: [{
+                label: "Latitud",
+                data: latitudes,
+                fill: false
+            }]
+        }
+    });
+
+    // ---- GRÁFICA DE LONGITUD ----
+    if (chartLongitudes) chartLongitudes.destroy();
+
+    chartLongitudes = new Chart(document.getElementById("graficaLongitudes"), {
+        type: "line",
+        data: {
+            labels: horas,
+            datasets: [{
+                label: "Longitud",
+                data: longitudes,
+                fill: false
+            }]
+        }
+    });
 }
 
 cargarDatos();
